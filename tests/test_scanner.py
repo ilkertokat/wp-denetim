@@ -59,3 +59,30 @@ def test_non_wordpress_site_skips_wp_checks():
     r = scan("https://site.test", client=client(plain), ssl_probe=lambda h, p: 120)
     assert not r.is_wordpress
     assert not ids(r) & {"user-enum", "xmlrpc", "wp-version", "dir-listing"}
+
+
+def _site_with_cookie(cookie):
+    from fake_site import hardened_site
+    import httpx
+
+    def handler(req):
+        resp = hardened_site(req)
+        if req.url.scheme == "https" and req.url.path == "/":
+            headers = [(k, v) for k, v in resp.headers.multi_items() if k != "set-cookie"]
+            return httpx.Response(200, text=resp.text, headers=[*headers, ("set-cookie", cookie)])
+        return resp
+    return handler
+
+
+def test_cookie_flags_in_name_or_value_are_not_trusted():
+    # "secure" / "httponly" in the cookie name or value is not the flag itself
+    r = scan("https://site.test", client=client(_site_with_cookie("secure_httponly=Secure; path=/")),
+             ssl_probe=lambda h, p: 120)
+    f = next(f for f in r.findings if f.id == "cookies")
+    assert "secure_httponly (Secure yok)" in f.detail and "secure_httponly (HttpOnly yok)" in f.detail
+
+
+def test_cookie_flags_are_case_insensitive_attributes():
+    r = scan("https://site.test", client=client(_site_with_cookie("oturum=abc; path=/; secure ; HTTPONLY")),
+             ssl_probe=lambda h, p: 120)
+    assert "cookies" not in ids(r)

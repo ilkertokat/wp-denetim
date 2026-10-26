@@ -204,11 +204,14 @@ def check_sensitive_files(ctx: Context) -> None:
 def check_cookies(ctx: Context) -> None:
     bad = []
     for raw in ctx.home.headers.get_list("set-cookie"):
-        name = raw.split("=", 1)[0]
-        low = raw.lower()
-        if urlparse(ctx.base).scheme == "https" and "secure" not in low:
+        name, _, rest = raw.partition("=")
+        name = name.strip()
+        # Bayrakları yalnız ";" sonrasındaki özniteliklerde ara: "secure_token=..." gibi
+        # çerez adları ya da değerleri bayrak sanılmasın.
+        attrs = {a.split("=", 1)[0].strip().lower() for a in rest.split(";")[1:]}
+        if urlparse(ctx.base).scheme == "https" and "secure" not in attrs:
             bad.append(f"{name} (Secure yok)")
-        if "httponly" not in low:
+        if "httponly" not in attrs:
             bad.append(f"{name} (HttpOnly yok)")
     if bad:
         ctx.report.add(Finding("cookies", "Çerez güvenlik bayrakları eksik", Severity.LOW,
