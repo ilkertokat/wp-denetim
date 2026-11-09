@@ -18,13 +18,25 @@ from .scanner import scan
 app = typer.Typer(add_completion=False, help="WordPress siteleri için pasif güvenlik denetimi.")
 console = Console()
 
+GRADES = "ABCDF"
+
+
+def _check_grade(value: Optional[str]) -> Optional[str]:
+    """--min-grade'i tarama başlamadan doğrular; geçersizse kullanım hatası (çıkış kodu 2)."""
+    if value is None:
+        return None
+    grade = value.strip().upper()
+    if len(grade) != 1 or grade not in GRADES:
+        raise typer.BadParameter(f"A, B, C, D ya da F olmalı (verilen: {value!r})")
+    return grade
+
 
 @app.command()
 def main(
     url: str = typer.Argument(..., help="Denetlenecek site (yalnızca sahibi olduğunuz ya da izniniz olan siteler)"),
     html: Optional[Path] = typer.Option(None, "--html", help="HTML raporu yaz"),
     json_out: Optional[Path] = typer.Option(None, "--json", help="JSON raporu yaz"),
-    min_grade: Optional[str] = typer.Option(None, "--min-grade",
+    min_grade: Optional[str] = typer.Option(None, "--min-grade", callback=_check_grade,
         help="Not bundan kötüyse çıkış kodu 1 olur (CI için, ör. --min-grade B)"),
     version: bool = typer.Option(False, "--version", help="Sürümü göster"),
 ) -> None:
@@ -40,7 +52,7 @@ def main(
     if json_out:
         json_out.write_text(json.dumps(report.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
         console.print(f"JSON rapor: [bold]{json_out}[/]")
-    if min_grade and "ABCDF".index(report.grade) > "ABCDF".index(min_grade.upper()):
+    if min_grade and GRADES.index(report.grade) > GRADES.index(min_grade):
         raise typer.Exit(code=1)
 
 

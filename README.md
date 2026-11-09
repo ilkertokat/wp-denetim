@@ -40,7 +40,7 @@ python -m wpdenetim https://ornek.com --html rapor.html --json rapor.json
 CI hattında, not belirli bir seviyenin altındaysa derlemeyi durdurmak için:
 
 ```bash
-python -m wpdenetim https://staging.ornek.com --min-grade B   # C veya kötüyse çıkış kodu 1
+python -m wpdenetim https://staging.ornek.com --min-grade B   # C veya kötüyse çıkış kodu 1 (geçersiz harf: tarama başlamadan çıkış kodu 2)
 ```
 
 ### HTML rapor
@@ -72,7 +72,7 @@ wpdenetim/
 ## Testler
 
 ```bash
-pytest -q      # 14 passed
+pytest -q      # 21 passed
 python scripts/demo_report.py   # README görsellerini sahte siteden yeniden üretir
 ```
 
@@ -80,7 +80,7 @@ python scripts/demo_report.py   # README görsellerini sahte siteden yeniden ür
 
 ## English
 
-**WP Denetim** ("WP Audit") is a passive security scanner for WordPress sites. It checks HTTPS and certificate expiry, security headers, version disclosure, username enumeration, XML-RPC, directory listing, leaked files (`.env`, `.git`, config backups, `debug.log`) and cookie flags, inventories plugins and the theme, then grades the site A–F with actionable fixes. Output goes to the terminal (rich), a standalone HTML report or JSON; `--min-grade` makes it usable as a CI gate. Built with Python, httpx, rich and typer; tests run fully offline against mock sites.
+**WP Denetim** ("WP Audit") is a passive security scanner for WordPress sites. It checks HTTPS and certificate expiry, security headers, version disclosure, username enumeration, XML-RPC, directory listing, leaked files (`.env`, `.git`, config backups, `debug.log`) and cookie flags, inventories plugins and the theme, then grades the site A–F with actionable fixes. Output goes to the terminal (rich), a standalone HTML report or JSON; `--min-grade` makes it usable as a CI gate (exit code 1 below the grade; an invalid grade is rejected with exit code 2 before any request is sent). Built with Python, httpx, rich and typer; tests run fully offline against mock sites.
 
 **Use it only on sites you own or are authorised to test.**
 

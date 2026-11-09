@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from fake_site import client, vulnerable_site
 from typer.testing import CliRunner
 
@@ -50,3 +52,17 @@ def test_cli_writes_reports_and_fails_on_min_grade(tmp_path, monkeypatch):
     assert res.exit_code == 1
     assert html.read_text(encoding="utf-8").startswith("<!doctype html>")
     assert json.loads(js.read_text(encoding="utf-8"))["is_wordpress"] is True
+
+
+def test_cli_accepts_lowercase_min_grade(monkeypatch):
+    monkeypatch.setattr(cli, "scan", lambda url: scan(url, client=client(vulnerable_site), ssl_probe=lambda h, p: 90))
+    assert CliRunner().invoke(cli.app, ["https://site.test", "--min-grade", "f"]).exit_code == 0
+
+
+@pytest.mark.parametrize("bad", ["E", "Z", "AB", "BC", "", "1"])
+def test_cli_rejects_invalid_min_grade_before_scanning(monkeypatch, bad):
+    calls = []
+    monkeypatch.setattr(cli, "scan", lambda url: calls.append(url))
+    res = CliRunner().invoke(cli.app, ["https://site.test", "--min-grade", bad])
+    assert res.exit_code == 2
+    assert calls == []          # tarama hiç başlamadı
