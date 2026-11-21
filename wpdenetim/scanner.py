@@ -76,9 +76,10 @@ def check_https(ctx: Context) -> None:
                                "Trafik şifrelenmeden taşınıyor.", "Let's Encrypt ile ücretsiz sertifika kurun."))
         return
     r = ctx.get(f"http://{p.netloc}/", follow_redirects=False)
-    if r is not None and not (r.is_redirect and str(r.headers.get("location", "")).startswith("https://")):
+    if r is None or not (r.is_redirect and str(r.headers.get("location", "")).startswith("https://")):
+        detail = f"http://{p.netloc}/ → {r.status_code if r is not None else '(bağlantı kurulamadı)'}"
         ctx.report.add(Finding("http-redirect", "HTTP isteği HTTPS'e yönlendirilmiyor", Severity.MEDIUM,
-                               f"http://{p.netloc}/ → {r.status_code}", "Sunucuda 301 ile HTTPS yönlendirmesi ekleyin."))
+                               detail, "Sunucuda 301 ile HTTPS yönlendirmesi ekleyin."))
     else:
         ctx.report.passed.append("HTTP → HTTPS yönlendirmesi var")
 

@@ -86,3 +86,18 @@ def test_cookie_flags_are_case_insensitive_attributes():
     r = scan("https://site.test", client=client(_site_with_cookie("oturum=abc; path=/; secure ; HTTPONLY")),
              ssl_probe=lambda h, p: 120)
     assert "cookies" not in ids(r)
+
+
+def test_https_check_fails_when_http_connection_fails():
+    import httpx
+
+    def fail_http_handler(req: httpx.Request):
+        if req.url.scheme == "http":
+            raise httpx.ConnectError("Connection refused")
+        return hardened_site(req)
+
+    r = scan("https://site.test", client=client(fail_http_handler), ssl_probe=lambda h, p: 120)
+    assert "http-redirect" in ids(r)
+    f = next(f for f in r.findings if f.id == "http-redirect")
+    assert "(bağlantı kurulamadı)" in f.detail
+    assert "HTTP → HTTPS yönlendirmesi var" not in r.passed

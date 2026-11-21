@@ -72,7 +72,7 @@ wpdenetim/
 ## Testler
 
 ```bash
-pytest -q      # 21 passed
+pytest -q      # 22 passed
 python scripts/demo_report.py   # README görsellerini sahte siteden yeniden üretir
 ```
 
